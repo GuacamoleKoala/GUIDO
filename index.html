@@ -72,11 +72,11 @@
         }
         #playPauseButton:hover { background-color: #e68900; }
         
-        /* === AANPASSING 3: RESETKNOP MEER NAAR LINKS === */
+        /* === AANPASSING 3: RESETKNOP MEER NAAR LINKS (GEPAST) === */
         #resetButton { 
             background-color: #007bff; 
-            margin-left: auto; /* margin-left: auto duwt deze naar rechts */
-            margin-right: -5px; /* Trekt de knop 5px naar links */
+            margin-left: auto; /* duwt deze naar rechts */
+            margin-right: 25px; /* **FIX:** Zorgt voor de gewenste white-space aan de rechterkant */
         } 
         #resetButton:hover { background-color: #0056b3; }
         
@@ -804,13 +804,11 @@
                 "Functionaliteiten:\n" +
                 "1. Tijdlijn: Filter relaties op basis van start- en eindjaar.\n" +
                 "2. Tijdsanimatie: Klik op de 'Start Animatie' knop om automatisch door de jaren te bliteren (op basis van het End Year).\n" +
-                "3. Interactie: Klik op een knooppunt (Node) om de directe relaties te highlighten. Klik nogmaals op dezelfde knoop, op de lege achtergrond, of **dubbelklik op een knoop** om de selectie en het info paneel te resetten.\n" +
-                "4. Legende: Klik op een categorie in de legende om te filteren.\n" +
-                "5. Info Paneel: Toont alle in- en uitgaande connecties van een geselecteerde knoop."
+                "3. Interactie: Klik op een knooppunt (Node) om de directe relaties te highlighten. Klik nogmaals op dezelfde knoop, op de"
             );
         }
-
-        // Start het laden van data zodra de pagina geladen is
+        
+        // Zorg ervoor dat de data wordt geladen wanneer de pagina klaar is
         window.onload = loadData;
     </script>
 </body>
