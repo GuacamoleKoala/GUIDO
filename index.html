@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html>
 <head>
-    <title>Gezelle Netwerk - Basis Visualisatie</title>
+    <title>Gezelle Netwerk - Met Tijdsfilter</title>
     
     <script type="text/javascript" src="https://unpkg.com/vis-network@9.1.2/standalone/umd/vis-network.min.js"></script>
     <script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.4.1/papaparse.min.js"></script>
@@ -10,7 +10,7 @@
         /* Minimale Stijlen */
         #mynetwork {
             width: 100%;
-            height: 80vh; /* Zichtbare hoogte */
+            height: 80vh; 
             min-height: 600px;
             border: 1px solid lightgray;
         }
@@ -18,37 +18,62 @@
             font-family: Arial, sans-serif; 
             padding: 20px; 
         }
+        .controls { 
+            margin-bottom: 20px; 
+            padding: 15px; 
+            border: 1px solid #ddd; 
+            background-color: #f9f9f9; 
+            display: flex; 
+            align-items: center;
+        }
+        .controls label, .controls input { margin-right: 20px; }
+        #resetButton { 
+            padding: 10px 15px; 
+            background-color: #007bff; 
+            color: white; 
+            border: none; 
+            border-radius: 5px; 
+            cursor: pointer; 
+            margin-left: auto;
+        }
+        #resetButton:hover { background-color: #0056b3; }
     </style>
 </head>
 <body>
 
-    <h1>Netwerk Visualisatie Guido Gezelle (Basis)</h1>
+    <h1>Netwerk Visualisatie Guido Gezelle (Met Tijdsfilter)</h1>
+
+    <div class="controls">
+        <label for="startYear">Start Jaar:</label>
+        <input type="number" id="startYear" value="1870" min="1800" max="1950" onchange="filterAndDraw()">
+
+        <label for="endYear">Eind Jaar:</label>
+        <input type="number" id="endYear" value="1890" min="1800" max="1950" onchange="filterAndDraw()">
+        
+        <p style="margin-top: 0; margin-right: 20px;">Gefilterde knooppunten: <strong id="nodeCount">0</strong> | Gefilterde randen: <strong id="edgeCount">0</strong></p>
+
+        <button id="resetButton" onclick="filterAndDraw()">Herteken Grafiek</button>
+    </div>
 
     <div id="mynetwork"></div>
 
     <script type="text/javascript">
+        let allNodes = []; // Opslag voor alle ruwe nodes
+        let allEdges = []; // Opslag voor alle ruwe edges
         let network = null;
+        let nodesDataSet = null; // De Vis.js DataSet voor nodes
+        let edgesDataSet = null; // De Vis.js DataSet voor edges
         const container = document.getElementById('mynetwork');
         
         // --- Vis.js Opties ---
         const options = {
-            nodes: {
-                shape: 'dot',
-                font: { size: 14, color: '#333' }, 
-                borderWidth: 2
-            },
-            edges: {
-                arrows: 'to',
-                color: { inherit: true },
-                smooth: { type: 'continuous' }
-            },
-            physics: {
-                enabled: false /* Cruciaal: Gebruikt de X/Y coördinaten uit het CSV */
-            }
+            nodes: { shape: 'dot', font: { size: 14, color: '#333' }, borderWidth: 2 },
+            edges: { arrows: 'to', color: { inherit: true }, smooth: { type: 'continuous' } },
+            physics: { enabled: false /* Gebruikt de X/Y coördinaten uit het CSV */ }
         };
 
         // --------------------------------------------------------------------
-        // --- Data Laden en Parsen Functies ---
+        // --- Data Functies ---
         // --------------------------------------------------------------------
 
         /**
@@ -60,7 +85,7 @@
                     download: true,
                     header: true,
                     skipEmptyLines: true,
-                    dynamicTyping: true, // Zorgt dat nummers als nummers worden gelezen
+                    dynamicTyping: true, 
                     complete: (results) => {
                         if (results.data.length === 0) {
                             reject(new Error(`CSV-bestand ${url} is leeg.`));
@@ -73,57 +98,110 @@
         }
         
         /**
-         * Laadt de CSV-bestanden, formatteert de data en tekent het netwerk.
+         * Laadt de CSV-bestanden en slaat de volledige dataset op.
          */
-        async function loadAndDrawNetwork() {
+        async function loadData() {
             try {
-                // 1. Data Laden
+                // 1. Ruwe data Laden
                 const nodesDataRaw = await parseCSV('nodes.csv');
                 const edgesDataRaw = await parseCSV('edges.csv');
 
-                // 2. Data Formatteren (Minimalistisch)
-                const nodes = new vis.DataSet(
-                    nodesDataRaw.map(d => ({
-                        id: d.Id, 
-                        label: d.Label, 
-                        group: d.category,
-                        color: d.Color,
-                        size: parseFloat(d.Size) || 15,
-                        x: parseFloat(d.X), 
-                        y: parseFloat(d.Y),
-                        fixed: true,
-                        // De 'title' wordt gebruikt voor de tooltip bij hover
-                        title: `Naam: ${d.Label}\nType: ${d.category}` 
-                    }))
-                );
+                // 2. Data Mappen en Opslaan
+                allNodes = nodesDataRaw.map(d => ({
+                    id: d.Id, 
+                    label: d.Label, 
+                    group: d.category,
+                    color: d.Color,
+                    size: parseFloat(d.Size) || 15,
+                    x: parseFloat(d.X), 
+                    y: parseFloat(d.Y),
+                    fixed: true,
+                    title: `Naam: ${d.Label}\nType: ${d.category}`,
+                    // Nodig voor de tijdsfilter, hoewel nodes niet direct gefilterd worden
+                    startYear: parseInt(d.startyearcorfixvalue), 
+                    endYear: parseInt(d.endyearcor)
+                }));
 
-                const edges = new vis.DataSet(
-                    edgesDataRaw.map(d => ({
-                        id: d.Id, 
-                        from: d.Source, 
-                        to: d.Target, 
-                        color: d.Color,
-                        // De 'title' wordt gebruikt voor de tooltip bij hover
-                        title: `Relatie: ${d.rollabel}`
-                    }))
-                );
+                allEdges = edgesDataRaw.map(d => ({
+                    id: d.Id, 
+                    from: d.Source, 
+                    to: d.Target, 
+                    color: d.Color,
+                    title: `Relatie: ${d.rollabel}`,
+                    // CRUCIAAL voor de tijdsfilter
+                    startYear: parseInt(d.finalstartyearfixvalue), 
+                    endYear: parseInt(d.finalendyearfixvalue),
+                    label: d.rollabel // Handig voor toekomstige legende
+                }));
+                
+                // 3. Initialiseer de DataSets
+                nodesDataSet = new vis.DataSet();
+                edgesDataSet = new vis.DataSet();
 
-                // 3. Netwerk Tekenen
-                const data = { nodes: nodes, edges: edges };
-                
-                network = new vis.Network(container, data, options);
-                
-                // Zorg dat het netwerk in beeld past
-                network.fit(); 
+                // 4. Eerste weergave
+                filterAndDraw();
 
             } catch (error) {
                 console.error("Fout bij het laden van de bestanden:", error);
                 container.innerHTML = "<h2>Data Laadfout: Netwerk is leeg</h2><p>Controleer of de bestanden **'nodes.csv'** en **'edges.csv'** in **dezelfde map** staan.</p>";
             }
         }
+        
+        // --------------------------------------------------------------------
+        // --- Filtering en Drawing Functies ---
+        // --------------------------------------------------------------------
+        
+        /**
+         * Filtert de data op basis van het ingestelde jaarbereik en tekent het netwerk.
+         */
+        function filterAndDraw() {
+            const startYear = parseInt(document.getElementById('startYear').value);
+            const endYear = parseInt(document.getElementById('endYear').value);
 
-        // Start het proces
-        loadAndDrawNetwork();
+            if (isNaN(startYear) || isNaN(endYear)) return;
+
+            // 1. Tijdfiltering (Edges)
+            let filteredEdges = allEdges.filter(edge => {
+                // Check op overlap: rand is actief als het begint voor het einde van de filter
+                // en eindigt na het begin van de filter.
+                return edge.startYear <= endYear && edge.endYear >= startYear;
+            });
+
+            // 2. Nodes bepalen op basis van de gefilterde Edges
+            let connectedNodeIds = new Set();
+            filteredEdges.forEach(edge => {
+                connectedNodeIds.add(edge.from);
+                connectedNodeIds.add(edge.to);
+            });
+            
+            let filteredNodes = allNodes.filter(node => connectedNodeIds.has(node.id));
+
+            // 3. Update de tellers
+            document.getElementById('nodeCount').textContent = filteredNodes.length;
+            document.getElementById('edgeCount').textContent = filteredEdges.length;
+
+            // 4. Update de Vis.js DataSets
+            nodesDataSet.clear();
+            nodesDataSet.add(filteredNodes);
+            edgesDataSet.clear();
+            edgesDataSet.add(filteredEdges);
+            
+            // 5. Initialiseer/Update het Netwerk
+            const data = { nodes: nodesDataSet, edges: edgesDataSet };
+            
+            if (network) {
+                // Als het netwerk al bestaat, update de data
+                network.setData(data);
+                network.fit();
+            } else {
+                // Anders, creëer het netwerk voor het eerst
+                network = new vis.Network(container, data, options);
+                network.fit();
+            }
+        }
+
+        // Start het laadproces
+        loadData();
     </script>
 
 </body>
