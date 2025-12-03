@@ -6,20 +6,18 @@
     <script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.4.1/papaparse.min.js"></script>
     
     <style>
-        /* FIX 1: Zorgt dat de body de volledige viewport-hoogte inneemt en de basis is voor flexbox */
+        /* FIX 1: Zorgt dat de body de volledige viewport-hoogte inneemt */
         html, body {
             height: 100%; 
             margin: 0;
-            /* FIX 4: Voorkomt ongewenste scrollbars die de 'verschuiving' (offset) veroorzaken. */
-            overflow: hidden; 
+            overflow: hidden; /* Voorkomt scrollbars */
         }
 
         /* Basisstijlen voor de container */
         #mynetwork {
             width: 100%;
-            /* OUDE REGELS VERWIJDERD: height: 80vh; min-height: 600px; */
-            flex-grow: 1; /* FIX 3: Laat de visualisatie de resterende verticale ruimte opvullen */
-            min-height: 500px; /* Behoudt een minimale hoogte voor de visualisatie */
+            flex-grow: 1; /* Vult de resterende hoogte */
+            min-height: 500px; 
             border: 1px solid lightgray;
             box-shadow: 0 0 10px rgba(0,0,0,0.1);
         }
@@ -27,32 +25,30 @@
             font-family: Arial, sans-serif; 
             padding: 20px; 
             position: relative;
-            display: flex; /* FIX 2: Activeert flexbox */
-            flex-direction: column; /* FIX 2: Stapelt elementen verticaal */
-            box-sizing: border-box; /* FIX 2: Zorgt dat de padding (20px) binnen de 100% hoogte valt */
+            display: flex; 
+            flex-direction: column; 
+            box-sizing: border-box; 
         }
 
-        /* Stijlen voor de controlebalk (jaartallen, reset, animatie) */
+        /* Stijlen voor de controlebalk */
         .controls { 
             margin-bottom: 15px; 
             padding: 15px; 
             border: 1px solid #ddd; 
             background-color: #f9f9f9; 
             display: flex; 
-            flex-direction: column; /* Forceert de interne rijen om onder elkaar te staan */
+            flex-direction: column; 
             flex-wrap: wrap;
-            /* NIEUW: Zorgt dat de controls niet onnodig veel ruimte innemen (Flexbox gedrag) */
             flex-shrink: 0; 
         }
-        .control-row { /* NIEUW: Stijl voor een enkele rij */
+        .control-row { 
             display: flex;
             align-items: center;
             width: 100%;
             margin-bottom: 10px; 
         }
-        /* ... de rest van de stijlen blijven ongewijzigd ... */
         .controls label, .controls input, .controls select { margin-right: 15px; }
-        .controls p { margin: 0 20px 0 0; } /* Aangepaste margin-top */
+        .controls p { margin: 0 20px 0 0; }
         
         /* Stijlen voor de functionele knoppen */
         .functional-button { 
@@ -65,25 +61,24 @@
             transition: background-color 0.2s;
         }
         
-        /* === AANPASSING 2: MEER RUIMTE NA STARTKNOP === */
+        /* Specifieke knop stijlen */
         #playPauseButton { 
             background-color: #ff9800; 
-            margin-right: 25px; /* Verhoogd om meer ruimte te geven aan 'Stapgrootte' */
+            margin-right: 25px; /* Ruimte rechts */
         }
         #playPauseButton:hover { background-color: #e68900; }
         
-        /* === AANPASSING 3: RESETKNOP MEER NAAR LINKS (GEPAST) === */
         #resetButton { 
             background-color: #007bff; 
-            margin-left: auto; /* duwt deze naar rechts */
-            margin-right: 25px; /* **FIX:** Zorgt voor de gewenste white-space aan de rechterkant */
+            margin-left: auto; 
+            margin-right: 25px; /* Ruimte rechts (whitespace) */
         } 
         #resetButton:hover { background-color: #0056b3; }
         
         #legendToggleButton, #infoButton { background-color: #28a745; }
         #legendToggleButton:hover, #infoButton:hover { background-color: #1e7e34; }
         
-        /* STIJLEN VOOR LEGENDE & INFO PANEEL (Overlay) */
+        /* Overlays */
         .overlay-container {
             position: absolute;
             top: 100px;
@@ -96,11 +91,8 @@
             max-width: 350px;
             max-height: 450px;
             overflow-y: auto; 
-            position: absolute; 
             transition: opacity 0.3s;
         }
-
-        /* NIEUWE STIJL: De Sluitknop voor Overlays */
         .close-button {
             position: absolute;
             top: 10px;
@@ -118,7 +110,7 @@
         .close-button:hover { color: #dc3545; }
         .overlay-container h3 { padding-right: 30px; } 
 
-        /* Legende Items */
+        /* Legende */
         #legendContainer { display: none; } 
         .legend-item {
             display: flex;
@@ -135,8 +127,6 @@
             background-color: #ffe0b2;
             border: 1px dashed #ff9800;
         }
-
-        /* Legende Kleurbol / Lijn */
         .legend-color {
             min-width: 15px;
             height: 15px;
@@ -150,7 +140,7 @@
             margin-right: 10px;
         }
         
-        /* STIJLEN VOOR HET SLIDING INFO PANEEL */
+        /* Info Paneel */
         #nodeInfoPanel {
             position: fixed;
             top: 0;
@@ -236,6 +226,7 @@
         <div id="nodeInfoContent">
         </div>
     </div>
+
     <script type="text/javascript">
         let allNodes = [];
         let allEdges = [];
@@ -246,12 +237,12 @@
         let selectedNode = null; 
         let currentCategoryFilter = { category: null, isNode: null }; 
 
-        // --- Animatie State Variabelen ---
+        // --- Animatie State ---
         let isPlaying = false;
         let animationInterval = null;
         const ANIMATION_MIN_YEAR = 1800; 
         const ANIMATION_MAX_YEAR = 1950;
-        const ANIMATION_SPEED_MS = 500; // Halve seconde per stap
+        const ANIMATION_SPEED_MS = 500; 
 
         // --- Vis.js Options ---
         const options = {
@@ -265,13 +256,10 @@
                 color: { inherit: true },
                 smooth: { type: 'continuous' }
             },
-            physics: {
-                enabled: false 
-            }
+            physics: { enabled: false }
         };
-        // --------------------------------------------------------------------
 
-        // --- Data Laden en Parsen Functies ---
+        // --- Data Laden ---
         async function loadData() {
             try {
                 const nodesData = await parseCSV('nodes.csv');
@@ -301,44 +289,31 @@
                     color: d.Color
                 }));
                 
-                // Initialiseer het actieve jaartal
                 document.getElementById('activeEndYear').textContent = document.getElementById('endYear').value;
-
                 filterAndDraw();
                 buildLegend(); 
 
             } catch (error) {
                 console.error("Fout bij het laden van de bestanden:", error);
-                container.innerHTML = "<h2>Data Laadfout: Netwerk is leeg</h2><p>Controleer of de bestanden **'nodes.csv'** en **'edges.csv'** in **dezelfde map** staan.</p>";
+                container.innerHTML = "<h2>Data Laadfout</h2><p>Controleer de CSV bestanden.</p>";
             }
         }
 
         function parseCSV(url) {
             return new Promise((resolve, reject) => {
                 Papa.parse(url, {
-                    download: true,
-                    header: true,
-                    skipEmptyLines: true,
-                    dynamicTyping: true, 
-                    complete: (results) => {
-                        if (results.data.length === 0) {
-                            reject(new Error(`CSV-bestand ${url} is leeg.`));
-                        }
-                        resolve(results.data);
-                    },
+                    download: true, header: true, skipEmptyLines: true, dynamicTyping: true, 
+                    complete: (results) => resolve(results.data),
                     error: (error) => reject(error)
                 });
             });
         }
-        // --------------------------------------------------------------------
 
-
-        // --- Filtering en Drawing Functies ---
+        // --- Filtering & Drawing ---
         function filterAndDraw() {
             const startYear = parseInt(document.getElementById('startYear').value);
             let endYear = parseInt(document.getElementById('endYear').value);
             
-            // Corrigeer animatie loop (indien geanimeerd is het eindjaar het huidige jaar)
             if (isPlaying) {
                 endYear = parseInt(document.getElementById('activeEndYear').textContent);
                 document.getElementById('endYear').value = endYear;
@@ -346,13 +321,8 @@
 
             if (isNaN(startYear) || isNaN(endYear)) return;
 
-            // 1. Tijdfiltering (Basis)
-            let filteredEdges = allEdges.filter(edge => {
-                // Toon de rand als het actief is binnen het [startYear, endYear] bereik.
-                return edge.startYear <= endYear && edge.endYear >= startYear;
-            });
+            let filteredEdges = allEdges.filter(edge => edge.startYear <= endYear && edge.endYear >= startYear);
 
-            // 2. Nodes bepalen op basis van tijd-gefilterde Edges
             let connectedNodeIds = new Set();
             filteredEdges.forEach(edge => {
                 connectedNodeIds.add(edge.from);
@@ -360,12 +330,9 @@
             });
             let filteredNodes = allNodes.filter(node => connectedNodeIds.has(node.id));
 
-
-            // 3. Categorie Filtering (OP TOP VAN TIJDFILTER)
             if (currentCategoryFilter.category) {
                 const category = currentCategoryFilter.category;
                 const isNodeCategory = currentCategoryFilter.isNode;
-                
                 let finalEdges = filteredEdges;
 
                 if (isNodeCategory) {
@@ -385,165 +352,110 @@
                 filteredNodes = allNodes.filter(node => finalConnectedNodeIds.has(node.id));
             }
             
-            // 4. Update de tellers
             document.getElementById('nodeCount').textContent = filteredNodes.length;
             document.getElementById('edgeCount').textContent = filteredEdges.length;
 
-            // 5. Creëer/Update de Vis.js DataSets
-            // Deze DataSets (originalNodesData/originalEdgesData) bevatten de gefilterde set die getoond wordt
             originalNodesData = new vis.DataSet(filteredNodes);
             originalEdgesData = new vis.DataSet(filteredEdges);
 
-            const data = {
-                nodes: originalNodesData,
-                edges: originalEdgesData
-            };
+            const data = { nodes: originalNodesData, edges: originalEdgesData };
 
             if (network) {
                 network.setData(data);
-                network.fit(); 
+                // setTimeout zorgt ervoor dat fit() pas werkt als de layout klaar is
+                setTimeout(() => { network.fit(); }, 0); 
             } else {
                 network = new vis.Network(container, data, options);
                 network.on("click", handleNodeClick);
-                // === AANPASSING 4: BIND DOUBLE-CLICK EVENT ===
                 network.on("doubleClick", handleDoubleClick);
-                // ==============================================
-                
-                // FIX 5: Zorgt dat network.fit() wordt uitgevoerd NADAT de DOM de nieuwe afmetingen heeft berekend.
-                setTimeout(() => {
-                    network.fit(); 
-                }, 0);
+                setTimeout(() => { network.fit(); }, 0);
             }
             
-            // 6. Reset state en UI (wanneer filter verandert, reset highlighting)
             selectedNode = null; 
             resetHighlighting(false); 
             updateInfoPanel(null); 
             updateLegendHighlight(); 
         }
-        // --------------------------------------------------------------------
 
-
-        // --- Animatie Functies (NIEUW) ---
-
+        // --- Animatie ---
         function toggleAnimation() {
-            if (isPlaying) {
-                stopAnimation();
-            } else {
-                startAnimation();
-            }
+            if (isPlaying) stopAnimation(); else startAnimation();
         }
 
         function startAnimation() {
             if (isPlaying) return;
-
             isPlaying = true;
             document.getElementById('playPauseButton').textContent = '⏸ Pauzeer Animatie';
-            
-            // Bepaal de stapgrootte
             const step = parseInt(document.getElementById('yearStep').value);
-            
-            // Bepaal het startpunt voor de animatie
             let startYearInput = parseInt(document.getElementById('startYear').value);
             let currentYear = parseInt(document.getElementById('endYear').value);
             
-            // Begin de animatie vanaf het startjaar als het huidige jaar te laag is, anders vanaf het huidige jaar.
-            if (currentYear < startYearInput) {
-                currentYear = startYearInput;
-            }
+            if (currentYear < startYearInput) currentYear = startYearInput;
             
-            // Reset het actieve jaartal
             document.getElementById('activeEndYear').textContent = currentYear;
             document.getElementById('endYear').value = currentYear;
             filterAndDraw();
 
             animationInterval = setInterval(() => {
                 currentYear += step;
-                
                 if (currentYear > ANIMATION_MAX_YEAR) {
                     stopAnimation();
                     currentYear = ANIMATION_MAX_YEAR;
                 }
-                
                 document.getElementById('activeEndYear').textContent = currentYear;
-
-                // Stop animatie als startYear > endYear. (Zou niet moeten gebeuren met onze logica, maar is veiliger)
-                if (currentYear < startYearInput) {
-                    stopAnimation();
-                    return;
-                }
-
-                // Roep filterAndDraw aan, die de endYear uit 'activeEndYear' leest als isPlaying = true
+                if (currentYear < startYearInput) { stopAnimation(); return; }
                 filterAndDraw();
-                
-                // Als de max is bereikt, stop de loop na de laatste tekening
-                if (currentYear >= ANIMATION_MAX_YEAR) {
-                    stopAnimation();
-                }
-
+                if (currentYear >= ANIMATION_MAX_YEAR) stopAnimation();
             }, ANIMATION_SPEED_MS);
         }
 
         function stopAnimation() {
             if (!isPlaying) return;
-
             isPlaying = false;
             clearInterval(animationInterval);
             document.getElementById('playPauseButton').textContent = '▶ Start Animatie';
-            
-            // Zorg ervoor dat het End Year inputveld de uiteindelijke waarde overneemt
             const finalYear = parseInt(document.getElementById('activeEndYear').textContent);
             document.getElementById('endYear').value = finalYear;
-            
-            // Herteken de laatste frame om zeker te zijn van de staat
             filterAndDraw(); 
         }
 
-        // --------------------------------------------------------------------
-
-
-        // --- UI Interactie Functies ---
+        // --- Interactie & Fixes ---
         
         function resetView() {
-            // Reset categoriefilter
             currentCategoryFilter = { category: null, isNode: null };
-            
-            // Stop animatie, reset highlight en info panel
             stopAnimation();
-            
-            // Reset jaartallen naar de default waarden (optioneel, nu gehouden op de huidige waarden)
-            // document.getElementById('startYear').value = 1870;
-            // document.getElementById('endYear').value = 1890;
-            
-            filterAndDraw(); // Roept resetHighlighting en updateInfoPanel aan
+            filterAndDraw(); 
             network.fit();
         }
         
-        /**
-         * Reset de highlighting van alle nodes en edges.
-         */
+        // FIX: Deze functie herstelt de kleuren vanuit de originele data (allNodes/allEdges)
         function resetHighlighting(unselect = true) {
             if (!originalNodesData || !originalEdgesData) return;
 
             const updatedNodes = [];
             const updatedEdges = [];
 
-            // Reset stijlen van nodes
             originalNodesData.forEach(node => {
+                // Haal de originele kleur op uit de 'allNodes' array, niet de dataset (want die is grijs)
+                const originalNode = allNodes.find(n => n.id === node.id);
+                const originalColor = originalNode ? originalNode.color : '#333';
+
                 updatedNodes.push({
                     id: node.id,
                     opacity: 1.0,
-                    color: node.color,
+                    color: originalColor, // Herstel naar originele kleur
                     borderWidth: 2
                 });
             });
 
-            // Reset stijlen van edges
             originalEdgesData.forEach(edge => {
+                const originalEdge = allEdges.find(e => e.id === edge.id);
+                const originalColor = originalEdge ? originalEdge.color : '#333';
+
                 updatedEdges.push({
                     id: edge.id,
                     width: 1,
-                    color: { color: edge.color || '#333', opacity: 1.0 }
+                    color: { color: originalColor, opacity: 1.0 }
                 });
             });
             
@@ -557,54 +469,41 @@
             updateInfoPanel(null); 
         }
         
-        /**
-         * Behandelt de klik op een node of op de achtergrond. (BUGFIX GEÏMPLEMENTEERD)
-         */
         function handleNodeClick(params) {
             const clickedNodeId = params.nodes.length > 0 ? params.nodes[0] : null;
 
             if (clickedNodeId) {
                 if (clickedNodeId === selectedNode) {
-                    // Scenario 1: Klik op dezelfde node (RESET)
+                    // Scenario 1: Klik op REEDS geselecteerde node (DESELECT)
                     selectedNode = null;
-                    resetHighlighting();
-                    network.unselectAll(); // Fix 1: Zorgt ervoor dat de interne selectie ook gewist wordt
+                    resetHighlighting(); // Herstelt kleuren correct
+                    network.unselectAll(); 
                     updateInfoPanel(null); 
-                    network.fit();
+                    // BELANGRIJK: GEEN network.fit() hier, zodat we niet uitzoomen!
                 } else {
-                    // Scenario 2: Klik op een nieuwe node (SELECT)
+                    // Scenario 2: Klik op nieuwe node (SELECT)
                     selectedNode = clickedNodeId;
                     highlightNode(selectedNode);
                     updateInfoPanel(selectedNode);
-                    // network.selectNodes([selectedNode], true); // Vis.js heeft dit meestal al gedaan
                 }
             } else {
                 // Scenario 3: Klik op achtergrond (RESET)
                 selectedNode = null;
                 resetHighlighting();
-                network.unselectAll(); // Fix 2: Zorgt ervoor dat de interne selectie ook gewist wordt
+                network.unselectAll(); 
                 updateInfoPanel(null); 
-                network.fit(); 
+                // Hier mag evt. wel network.fit() als je dat fijn vindt bij klik op achtergrond, 
+                // maar voor consistentie laat ik het nu weg.
             }
         }
 
-        // === NIEUW: FUNCTIE VOOR DUBBELKLIK OP NODE ===
-        /**
-         * Behandelt de dubbelklik op een node en reset de view als er een node is geklikt.
-         */
         function handleDoubleClick(params) {
-            // Check of de dubbelklik op een knoop (node) gebeurde
             if (params.nodes.length > 0) {
-                // Voer de algemene reset functie uit (dezelfde actie als de resetknop)
+                // Dubbelklik doet volledige reset (inclusief zoom)
                 resetView(); 
             }
         }
-        // ==============================================
 
-
-        /**
-         * Highlight een specifieke node en zijn directe connecties.
-         */
         function highlightNode(nodeId) {
             const updatedNodes = [];
             const updatedEdges = [];
@@ -622,11 +521,16 @@
             originalNodesData.forEach(node => {
                 const isSelected = node.id === nodeId;
                 const isConnected = connectedNodeIds.has(node.id);
+                
+                // Haal originele kleur op om te gebruiken als basis
+                const originalNode = allNodes.find(n => n.id === node.id);
+                const originalColor = originalNode ? originalNode.color : '#333';
+
                 let update = { id: node.id };
 
                 if (isSelected || isConnected) {
                     update.opacity = 1.0;
-                    update.color = node.color; 
+                    update.color = originalColor; 
                     update.borderWidth = isSelected ? 3 : 2;
                 } else {
                     update.opacity = 0.3;
@@ -637,11 +541,15 @@
 
             originalEdgesData.forEach(edge => {
                 const isConnected = connectedEdges.includes(edge.id);
+                
+                const originalEdge = allEdges.find(e => e.id === edge.id);
+                const originalColor = originalEdge ? originalEdge.color : '#333';
+
                 let update = { id: edge.id };
 
                 if (isConnected) {
                     update.width = 3;
-                    update.color = { color: edge.color || '#333', opacity: 1.0 }; 
+                    update.color = { color: originalColor, opacity: 1.0 }; 
                 } else {
                     update.width = 1;
                     update.color = { color: '#ccc', opacity: 0.1 };
@@ -653,8 +561,7 @@
             originalEdgesData.update(updatedEdges);
         }
         
-        // --- Legende Functies ---
-        
+        // --- Legende en Info ---
         function toggleLegend(hide = false) {
             const container = document.getElementById('legendContainer');
             const button = document.getElementById('legendToggleButton');
@@ -668,7 +575,7 @@
         }
         
         function toggleCategoryFilter(category, isNode) {
-            stopAnimation(); // Stop animatie bij handmatig filteren
+            stopAnimation(); 
             if (currentCategoryFilter.category === category && currentCategoryFilter.isNode === isNode) {
                 currentCategoryFilter = { category: null, isNode: null };
             } else {
@@ -681,14 +588,11 @@
             document.querySelectorAll('.legend-item').forEach(item => {
                 item.classList.remove('active');
             });
-            
             if (currentCategoryFilter.category) {
                 const safeCategory = currentCategoryFilter.category.replace(/\s/g, '_');
                 const id = `legend-${currentCategoryFilter.isNode ? 'node' : 'edge'}-${safeCategory}`;
                 const activeItem = document.getElementById(id);
-                if (activeItem) {
-                    activeItem.classList.add('active');
-                }
+                if (activeItem) activeItem.classList.add('active');
             }
         }
 
@@ -702,113 +606,64 @@
                     uniqueNodeCategories.set(node.group, node.color);
                 }
             });
-            
             allEdges.forEach(edge => {
                 if (edge.label && !uniqueEdgeCategories.has(edge.label)) {
                     uniqueEdgeCategories.set(edge.label, edge.color);
                 }
             });
 
-
             let html = '<h4>Knooppunttypes (Nodes)</h4>';
             uniqueNodeCategories.forEach((color, category) => {
                 const safeCategory = category.replace(/\s/g, '_');
                 const id = `legend-node-${safeCategory}`;
-                html += `
-                    <div class="legend-item" id="${id}" onclick="toggleCategoryFilter('${category}', true)">
+                html += `<div class="legend-item" id="${id}" onclick="toggleCategoryFilter('${category}', true)">
                         <div class="legend-color" style="background-color: ${color}; border-color: ${color === '#ffffff' ? '#333' : color};"></div>
-                        <span>${category}</span>
-                    </div>
-                `;
+                        <span>${category}</span></div>`;
             });
             
             html += '<br><h4>Relatietypes (Edges)</h4>';
             uniqueEdgeCategories.forEach((color, label) => {
                 const safeLabel = label.replace(/\s/g, '_');
                 const id = `legend-edge-${safeLabel}`;
-                html += `
-                    <div class="legend-item" id="${id}" onclick="toggleCategoryFilter('${label}', false)">
+                html += `<div class="legend-item" id="${id}" onclick="toggleCategoryFilter('${label}', false)">
                         <div class="legend-edge" style="background-color: ${color};"></div>
-                        <span>${label}</span>
-                    </div>
-                `;
+                        <span>${label}</span></div>`;
             });
-
             legendList.innerHTML = html;
         }
 
-        // --- Info Paneel Functies ---
-        
-        function updateInfoPanel(nodeId) {
+        function updateInfoPanel(nodeId) { /* ... (Code ongewijzigd, maar nodig) ... */
             const panel = document.getElementById('nodeInfoPanel');
             const content = document.getElementById('nodeInfoContent');
-            
-            if (!nodeId) {
-                panel.style.right = '-300px'; 
-                content.innerHTML = '';
-                return;
-            }
-
+            if (!nodeId) { panel.style.right = '-300px'; content.innerHTML = ''; return; }
             const selectedNode = originalNodesData.get(nodeId);
-            if (!selectedNode) {
-                panel.style.right = '-300px';
-                return;
-            }
-
-            const connectedEdges = originalEdgesData.get({
-                filter: function(edge) {
-                    return edge.from === nodeId || edge.to === nodeId;
-                }
-            });
-            
-            const incomingNodes = [];
-            const outgoingNodes = [];
+            if (!selectedNode) { panel.style.right = '-300px'; return; }
+            const connectedEdges = originalEdgesData.get({ filter: function(edge) { return edge.from === nodeId || edge.to === nodeId; }});
+            const incomingNodes = []; const outgoingNodes = [];
             
             connectedEdges.forEach(edge => {
                 const isOutgoing = edge.from === nodeId;
                 const connectedId = isOutgoing ? edge.to : edge.from;
                 const connectedNode = originalNodesData.get(connectedId);
-                
                 if (connectedNode) {
                     const label = connectedNode.label;
                     const relationship = edge.label;
-                    
-                    if (isOutgoing) {
-                        outgoingNodes.push(`<li>&#8674; ${relationship}: <strong>${label}</strong></li>`);
-                    } else {
-                        incomingNodes.push(`<li>&#8676; ${relationship}: <strong>${label}</strong></li>`);
-                    }
+                    if (isOutgoing) outgoingNodes.push(`<li>&#8674; ${relationship}: <strong>${label}</strong></li>`);
+                    else incomingNodes.push(`<li>&#8676; ${relationship}: <strong>${label}</strong></li>`);
                 }
             });
 
-            let html = `
-                <h2>${selectedNode.label}</h2>
-                <p>Type: <strong>${selectedNode.group}</strong></p>
-                <hr>
-                
-                <h4>Uitgaande Relaties (${outgoingNodes.length})</h4>
-                ${outgoingNodes.length > 0 ? `<ul>${outgoingNodes.join('')}</ul>` : `<p>Geen uitgaande relaties in de huidige weergave.</p>`}
-                
-                <h4>Inkomende Relaties (${incomingNodes.length})</h4>
-                ${incomingNodes.length > 0 ? `<ul>${incomingNodes.join('')}</ul>` : `<p>Geen inkomende relaties in de huidige weergave.</p>`}
-            `;
-            
+            let html = `<h2>${selectedNode.label}</h2><p>Type: <strong>${selectedNode.group}</strong></p><hr>
+                <h4>Uitgaande Relaties (${outgoingNodes.length})</h4>${outgoingNodes.length > 0 ? `<ul>${outgoingNodes.join('')}</ul>` : `<p>Geen uitgaande relaties.</p>`}
+                <h4>Inkomende Relaties (${incomingNodes.length})</h4>${incomingNodes.length > 0 ? `<ul>${incomingNodes.join('')}</ul>` : `<p>Geen inkomende relaties.</p>`}`;
             content.innerHTML = html;
             panel.style.right = '0'; 
         }
 
         function showInfo() {
-            alert(
-                "Informatie over deze Visualisatie\n\n" +
-                "Dit netwerk visualiseert de relaties rond Guido Gezelle. De lay-out is vastgezet (physics: false) op basis van X- en Y-coördinaten.\n\n" +
-                "Functionaliteiten:\n" +
-                "1. Tijdlijn: Filter relaties op basis van start- en eindjaar.\n" +
-                "2. Tijdsanimatie: Klik op de 'Start Animatie' knop om automatisch door de jaren te bliteren (op basis van het End Year).\n" +
-                "3. Interactie: Klik op een knooppunt (Node) om de directe relaties te highlighten. Klik nogmaals op dezelfde knoop, op de"
-            );
+            alert("Informatie: Tijdlijn filters, Animatie, Interactie (klik/dubbelklik), Legende en Info Paneel.");
         }
-        
-        // Zorg ervoor dat de data wordt geladen wanneer de pagina klaar is
+
         window.onload = loadData;
     </script>
 </body>
